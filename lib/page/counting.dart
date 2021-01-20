@@ -1,6 +1,7 @@
-import 'package:dw_app/page/counting_page/offline_counting.dart';
 import 'package:dw_app/widget/home_page_button.dart';
 import 'package:flutter/material.dart';
+
+import 'counting_page/offline.dart';
 
 class Counting extends StatelessWidget {
   @override
@@ -22,8 +23,8 @@ class Counting extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => OfflineCounting(),
-                      ),
+                          //  builder: (context) => OfflineCounting(),
+                          ),
                     );
                   },
                 ),
@@ -36,7 +37,7 @@ class Counting extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => Counting(),
+                        builder: (context) => OfflineCount(),
                       ),
                     );
                   },

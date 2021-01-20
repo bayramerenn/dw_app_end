@@ -1,4 +1,5 @@
 import 'package:dw_app/page/counting.dart';
+import 'package:dw_app/util/app_constant.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -11,11 +12,17 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // SystemChrome.setSystemUIOverlayStyle(
+    //   SystemUiOverlayStyle(
+    //     statusBarColor: Colors.transparent,
+    //     statusBarIconBrightness: Brightness.light,
+    //   ),
+    // );
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'DW',
       theme: ThemeData(
-        primaryColor: Colors.red[400],
+        primaryColor: AppConstant.colorPrimary,
       ),
       home: HomePage(),
     );

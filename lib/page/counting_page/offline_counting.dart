@@ -6,6 +6,11 @@ import 'package:dw_app/util/app_constant.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
+import 'package:flutter_beep/flutter_beep.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:media_scanner/media_scanner.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class OfflineCounting extends StatefulWidget {
@@ -36,7 +41,7 @@ class _OfflineCountingState extends State<OfflineCounting> {
   }
 
   @override
-  void dispose() {
+  void dispose() async {
     _quantityController.dispose();
     _barcodeController.dispose();
     _focusNode.dispose();
@@ -52,6 +57,16 @@ class _OfflineCountingState extends State<OfflineCounting> {
       child: Scaffold(
         appBar: AppBar(
           title: Text("Offline Sayım"),
+          actions: [
+            IconButton(
+              icon: FaIcon(
+                FontAwesomeIcons.barcode,
+                color: Colors.white,
+                size: 30,
+              ),
+              onPressed: () => scanBarcodeNormal(),
+            ),
+          ],
         ),
         body: Container(
           padding: EdgeInsets.symmetric(horizontal: 8),
@@ -68,15 +83,6 @@ class _OfflineCountingState extends State<OfflineCounting> {
                       controller: _barcodeController,
                       decoration: InputDecoration(
                         hintText: "Barkod Okutunuz",
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            Icons.check,
-                            size: 30,
-                          ),
-                          onPressed: () {
-                            fillBarcodeList();
-                          },
-                        ),
                       ),
                       onFieldSubmitted: _submitButton,
                     ),
@@ -91,6 +97,16 @@ class _OfflineCountingState extends State<OfflineCounting> {
                       controller: _quantityController..text = "1",
                       keyboardType: TextInputType.number,
                     ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.check,
+                      size: 30,
+                      color: AppConstant.colorPrimary,
+                    ),
+                    onPressed: () {
+                      fillBarcodeList();
+                    },
                   ),
                 ],
               ),
@@ -114,6 +130,7 @@ class _OfflineCountingState extends State<OfflineCounting> {
                 child: Align(
                   alignment: Alignment.topLeft,
                   child: ListView.builder(
+                    itemExtent: 60,
                     shrinkWrap: true,
                     reverse: true,
                     itemCount: items.length,
@@ -152,9 +169,50 @@ class _OfflineCountingState extends State<OfflineCounting> {
     );
   }
 
+  Future<void> scanBarcodeNormal() async {
+    String barcodeScanRes;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
+          "#ff6666", "Cancel", true, ScanMode.BARCODE);
+      FlutterBeep.beep();
+      if (barcodeScanRes != "-1") {
+        _barcodeController.text = barcodeScanRes;
+        // setState(() {
+        //  items.add(BarcodeList(barcodeScanRes, "1"));
+        //_itemCount = items.length.toString();
+        //_itemQtySum += 1;
+        //});
+      }
+      print(barcodeScanRes);
+    } on PlatformException {
+      barcodeScanRes = 'Failed to get platform version.';
+    }
+  }
+
+  multipleBarcodeScan() async {
+    // FlutterBarcodeScanner.getBarcodeStreamReceiver(
+    //         "#6fa3e5", "Cancel", true, ScanMode.BARCODE)
+    //     .listen((barcode) {
+    //   setState(() {
+    //     if (barcode != "-1") {
+    //       _itemCount = items.length.toString();
+    //       _itemQtySum += 1;
+    //       items.add(BarcodeList(barcode, "1"));
+    //       FlutterBeep.beep();
+    //     }
+    //   });
+    // });
+  }
+
   Future<bool> _onBackPressed() async {
     if (items.isNotEmpty) {
-      return await onBackPressed(context);
+      if (await onBackPressed(context)) {
+        items.clear();
+        return true;
+      } else {
+        return false;
+      }
     } else {
       return true;
     }
@@ -173,13 +231,17 @@ class _OfflineCountingState extends State<OfflineCounting> {
   }
 
   void fillBarcodeList() {
-    setState(() {
-      items.add(BarcodeList(_barcodeController.text, _quantityController.text));
-      _itemCount = items.length.toString();
-      _itemQtySum += int.parse(_quantityController.text);
-      _barcodeController.clear();
-      _quantityController.clear();
-    });
+    if (_barcodeController.text != "" && _quantityController.text != "0") {
+      print("girdi");
+      setState(() {
+        items.add(
+            BarcodeList(_barcodeController.text, _quantityController.text));
+        _itemCount = items.length.toString();
+        _itemQtySum += int.parse(_quantityController.text);
+        _barcodeController.clear();
+        _quantityController.clear();
+      });
+    }
     FocusScope.of(context).requestFocus(_focusNode);
     SystemChannels.textInput.invokeMethod('TextInput.hide');
   }
@@ -208,14 +270,18 @@ class BarcodeList {
 
 Future<void> writeCounting(
     {List<BarcodeList> list, String fileName = ""}) async {
-  final file = File('${AppConstant.storageHomeDirectory}${fileName}.txt');
+  Directory data = await getApplicationDocumentsDirectory();
+
+  File file = File('${AppConstant.storageHomeDirectory}$fileName.txt');
   String text = "";
 
+  print(file);
   if (await Permission.storage.request().isGranted) {
     list.forEach((element) {
-      text += "${element.barcode}    ${element.qty}\n";
+      text = "${element.barcode}    ${element.qty}\r\n";
+      file.writeAsStringSync(text, mode: FileMode.append);
     });
-
-    await file.writeAsString(text, flush: true);
+    print(file.path);
+    await MediaScanner.loadMedia(path: file.path);
   }
 }

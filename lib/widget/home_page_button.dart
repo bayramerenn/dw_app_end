@@ -13,7 +13,7 @@ class HomePageButton extends StatelessWidget {
       onTap: func,
       child: Container(
         alignment: Alignment.center,
-        width: MediaQuery.of(context).size.width - 50,
+        width: MediaQuery.of(context).size.width * .8,
         height: 40,
         decoration: BoxDecoration(
           color: AppConstant.colorPrimary,
